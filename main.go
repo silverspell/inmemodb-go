@@ -32,8 +32,6 @@ func createServer() error {
 		}
 		go handleIncoming(conn)
 	}
-
-	return nil
 }
 
 func handleIncoming(conn net.Conn) {
