@@ -1,6 +1,8 @@
 package main
 
 import (
+	"bufio"
+	"bytes"
 	"fmt"
 	"net"
 	"strings"
@@ -35,16 +37,18 @@ func createServer() error {
 }
 
 func handleIncoming(conn net.Conn) {
-	buf := make([]byte, 1024)
+	reader := bufio.NewReader(conn)
+	var buffer bytes.Buffer
 	for {
-		n, err := conn.Read(buf)
+		n, _, err := reader.ReadLine()
 		if err != nil {
 			fmt.Printf("%+v\n", err)
 			return
 		}
+		buffer.Write(n)
 
-		if n > 0 {
-			data := strings.TrimSpace(string(buf[:n]))
+		if buffer.Len() > 0 {
+			data := strings.TrimSpace(buffer.String())
 			command := strings.Split(data, " ")
 			switch command[0] {
 			case "QUIT":
@@ -67,7 +71,9 @@ func handleIncoming(conn net.Conn) {
 			default:
 				conn.Write([]byte("OK unimplemented\n"))
 			}
+			buffer.Reset()
 		}
+
 	}
 }
 
