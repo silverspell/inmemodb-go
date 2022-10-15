@@ -40,16 +40,15 @@ func handleIncoming(conn net.Conn) {
 	reader := bufio.NewReader(conn)
 	var buffer bytes.Buffer
 	for {
-		n, _, err := reader.ReadLine()
+		n, isPrefix, err := reader.ReadLine()
 		if err != nil {
 			fmt.Printf("%+v\n", err)
 			return
 		}
 		buffer.Write(n)
 
-		if buffer.Len() > 0 {
-			data := strings.TrimSpace(buffer.String())
-			command := strings.Split(data, " ")
+		if buffer.Len() > 0 && !isPrefix {
+			command := strings.Split(buffer.String(), " ")
 			switch command[0] {
 			case "QUIT":
 				conn.Write([]byte("Bye\n"))
