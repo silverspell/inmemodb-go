@@ -38,7 +38,7 @@ func createServer() error {
 
 func handleIncoming(conn net.Conn) {
 	reader := bufio.NewReader(conn)
-	var buffer bytes.Buffer
+	buffer := bytes.Buffer{}
 	for {
 		n, isPrefix, err := reader.ReadLine()
 		if err != nil {
