@@ -7,8 +7,6 @@ import (
 	"net"
 	"strings"
 	"sync"
-
-	_ "net/http/pprof"
 )
 
 const (
