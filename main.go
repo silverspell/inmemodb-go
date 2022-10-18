@@ -7,7 +7,6 @@ import (
 	"net"
 	"sync"
 
-	"net/http"
 	_ "net/http/pprof"
 )
 
@@ -102,8 +101,5 @@ func init() {
 }
 
 func main() {
-	go func() {
-		http.ListenAndServe("0.0.0.0:8080", nil)
-	}()
 	createServer()
 }
