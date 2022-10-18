@@ -5,6 +5,7 @@ import (
 	"bytes"
 	"fmt"
 	"net"
+	"strings"
 	"sync"
 
 	_ "net/http/pprof"
@@ -51,18 +52,18 @@ func handleIncoming(conn net.Conn) {
 
 		if buffer.Len() > 0 && !isPrefix {
 			command := buffer.Bytes()[0:4]
-			switch string(command) {
+			switch strings.TrimSuffix(string(command), " ") {
 			case "QUIT":
 				conn.Write([]byte("Bye\n"))
 				conn.Close()
 				return
-			case "SET ":
+			case "SET":
 				key, val, _ := keyValSeperator(buffer.Bytes()[4:])
 				mut.Lock()
 				DB[key] = val
 				mut.Unlock()
 				conn.Write([]byte("OK\n"))
-			case "GET ":
+			case "GET":
 				key, _, _ := keyValSeperator(buffer.Bytes()[4:])
 				mut.RLock()
 				if val, ok := DB[key]; ok {
