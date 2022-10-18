@@ -66,9 +66,7 @@ func handleIncoming(conn net.Conn) {
 				key, _, _ := keyValSeperator(buffer.Bytes()[4:])
 				mut.RLock()
 				if val, ok := DB[key]; ok {
-					response := []byte("OK ")
-					response = append(response, val...)
-					response = append(response, []byte("\n")...)
+					response := appendArrays([]byte("OK "), val, []byte("\n"))
 					conn.Write(response)
 				} else {
 					conn.Write([]byte("OK\n"))
@@ -92,6 +90,23 @@ func keyValSeperator(buffer []byte) (string, []byte, error) {
 		}
 	}
 	return string(buffer), nil, nil
+}
+
+func appendArrays(arrays ...[]byte) []byte {
+	length := 0
+	for _, v := range arrays {
+		length += len(v)
+	}
+
+	retVal := make([]byte, length)
+	cnt := 0
+	for _, v := range arrays {
+		for i := cnt; i < cnt+len(v); i++ {
+			retVal[i] = v[i-cnt]
+		}
+		cnt += len(v)
+	}
+	return retVal
 }
 
 func init() {
