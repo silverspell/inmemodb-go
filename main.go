@@ -5,8 +5,10 @@ import (
 	"bytes"
 	"fmt"
 	"net"
-	"strings"
 	"sync"
+
+	"net/http"
+	_ "net/http/pprof"
 )
 
 const (
@@ -15,7 +17,7 @@ const (
 	TYPE = "tcp"
 )
 
-var DB map[string]string
+var DB map[string][]byte
 var mut sync.RWMutex
 var once sync.Once
 
@@ -45,28 +47,36 @@ func handleIncoming(conn net.Conn) {
 			fmt.Printf("%+v\n", err)
 			return
 		}
+
 		buffer.Write(n)
 
 		if buffer.Len() > 0 && !isPrefix {
-			command := strings.Split(buffer.String(), " ")
-			switch command[0] {
+			command := buffer.Bytes()[0:4]
+			switch string(command) {
 			case "QUIT":
 				conn.Write([]byte("Bye\n"))
 				conn.Close()
 				return
-			case "SET":
+			case "SET ":
+				key, val, _ := keyValSeperator(buffer.Bytes()[4:])
 				mut.Lock()
-				DB[command[1]] = strings.Join(command[2:], " ")
+				DB[key] = val
 				mut.Unlock()
 				conn.Write([]byte("OK\n"))
-			case "GET":
+			case "GET ":
+				key, _, _ := keyValSeperator(buffer.Bytes()[4:])
 				mut.RLock()
-				if val, ok := DB[command[1]]; ok {
-					conn.Write([]byte("OK " + val + "\n"))
+				if val, ok := DB[key]; ok {
+					response := []byte("OK ")
+					response = append(response, val...)
+					response = append(response, []byte("\n")...)
+					conn.Write(response)
 				} else {
 					conn.Write([]byte("OK\n"))
 				}
 				mut.RUnlock()
+			case "PING":
+				conn.Write([]byte("OK PONG\n"))
 			default:
 				conn.Write([]byte("OK unimplemented\n"))
 			}
@@ -76,12 +86,24 @@ func handleIncoming(conn net.Conn) {
 	}
 }
 
+func keyValSeperator(buffer []byte) (string, []byte, error) {
+	for i, val := range buffer {
+		if val == 32 { // 32 = " "
+			return string(buffer[0:i]), buffer[i+1:], nil
+		}
+	}
+	return string(buffer), nil, nil
+}
+
 func init() {
 	once.Do(func() {
-		DB = make(map[string]string)
+		DB = make(map[string][]byte)
 	})
 }
 
 func main() {
+	go func() {
+		http.ListenAndServe("0.0.0.0:8080", nil)
+	}()
 	createServer()
 }
